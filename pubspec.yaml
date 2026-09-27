@@ -1,0 +1,10 @@
+name: flutter_starter
+publish_to: none
+environment:
+  sdk: '>=3.13.0 <4.0.0'
+workspace:
+  - packages/core
+  - packages/ui
+  - example
+dev_dependencies:
+  flutter_lints: ^6.0.0
