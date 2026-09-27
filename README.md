@@ -18,6 +18,8 @@ Neither package requires Riverpod. The example demonstrates one root ProviderSco
 Put Flutter 3.47.5 on PATH, then:
 
 ```sh
+git clone https://github.com/clocksmith/flutter-starter.git flutter_starter
+cd flutter_starter
 flutter pub get
 bash tool/check.sh
 cd example
@@ -91,8 +93,12 @@ The example persists no task data, notes, credentials, or pending writes. Authen
 
 ## Reference
 
-The design follows the [architecture guide](https://github.com/clocksmith/256/blob/c582d4d/wip/drafts/flutter-mobile-app-architecture.md). Package public APIs are intentionally small. See the package READMEs and [example README](example/README.md) for customization and the concrete journey.
+The design follows the [architecture guide](docs/architecture.md). Package public APIs are intentionally small. See the package READMEs and [example README](example/README.md) for customization and the concrete journey.
 
 ## Validation record
 
-Verified locally on Flutter 3.47.5 / Dart 3.13.4: formatting, static analysis, dependency boundary checks, seven core tests, three UI tests, eight example tests, one independent consumer test, and a release web build. The final example tests also verify that an opaque server version token is forwarded unchanged. Android/iOS runners and a device integration test are included; native device execution has not been verified. The CI workflow is supplied but has not run on a remote repository.
+Verified locally on Flutter 3.47.5 / Dart 3.13.4: formatting, static analysis, dependency boundary checks, seven core tests, three UI tests, eight example tests, one independent consumer test, and a release web build. The final example tests also verify that an opaque server version token is forwarded unchanged. Android/iOS runners and a device integration test are included; native device execution has not been verified. Remote check results are available in [GitHub Actions](https://github.com/clocksmith/flutter-starter/actions).
+
+## License
+
+[MIT](LICENSE).

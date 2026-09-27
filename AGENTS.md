@@ -4,7 +4,7 @@ Build reusable packages named `core` and `ui`, plus a runnable example that cons
 
 ## Architecture
 
-- Follow the ownership and lifecycle rules in the [architecture guide](https://github.com/clocksmith/256/blob/c582d4d/wip/drafts/flutter-mobile-app-architecture.md).
+- Follow the ownership and lifecycle rules in the [architecture guide](docs/architecture.md).
 - `packages/core` is pure Dart: session lifecycle, typed failures, and safe diagnostics. It imports no Flutter, Riverpod, transport client, or app feature.
 - `packages/ui` contains Flutter components and session gates. Apps supply localized text, themes, routes, and feature behavior.
 - The example owns task models, repository reconciliation, transport adapters, Riverpod composition, and navigation.
