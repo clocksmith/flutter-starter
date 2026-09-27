@@ -2,8 +2,8 @@
 
 Flutter components using Material theme roles and app-provided strings. Depends on core for the session identity contract; has no Riverpod dependency.
 
-- `createUiTheme`: Material 3 theme from an app-owned seed and brightness.
-- `UiSpacing`: replaceable layout roles via ThemeExtension.
+- `createUiTheme`: Material 3 theme from an app-owned seed, brightness, and optional font family. Shared rounded shapes, typography hierarchy, and hover/pressed/focus states apply to buttons, fields, cards, and navigation. Apps bundle their chosen fonts.
+- `UiSpacing`: replaceable layout roles via ThemeExtension (16px gap, 24px inset, 760px maximum width).
 - `ContentArea`: constrained content width and semantic padding.
 - `ActionButton`: app-owned pending state, disabled duplicate interaction, wrapping labels.
 - `AsyncContent`: retain confirmed content during refresh and recoverable failure.

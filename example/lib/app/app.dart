@@ -15,10 +15,14 @@ class StarterApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) => MaterialApp(
     title: Strings.title,
-    theme: createUiTheme(seedColor: const Color(0xff315b54)),
+    theme: createUiTheme(
+      seedColor: const Color(0xff315b54),
+      fontFamily: 'Manrope',
+    ),
     darkTheme: createUiTheme(
       seedColor: const Color(0xff315b54),
       brightness: Brightness.dark,
+      fontFamily: 'Manrope',
     ),
     localizationsDelegates: GlobalMaterialLocalizations.delegates,
     supportedLocales: const [Locale('en')],
@@ -52,19 +56,71 @@ class _SignIn extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(failed ? Strings.sessionFailure : Strings.demo),
-            SizedBox(height: UiSpacing.of(context).gap),
-            for (final account in ['A', 'B'])
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: ActionButton(
-                  label: account == 'A' ? Strings.accountA : Strings.accountB,
-                  pendingLabel: Strings.switching,
-                  onPressed: () => unawaited(
-                    ref.read(sessionStateProvider.notifier).activate(account),
-                  ),
+            const SizedBox(height: 24),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Icon(
+                  Icons.checklist_rounded,
+                  size: 32,
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
                 ),
               ),
+            ),
+            const SizedBox(height: 32),
+            Text(
+              Strings.welcome,
+              style: Theme.of(context).textTheme.headlineLarge,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              Strings.welcomeDetail,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 32),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      Strings.chooseAccount,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      failed ? Strings.sessionFailure : Strings.demo,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    ActionButton(
+                      label: Strings.accountA,
+                      pendingLabel: Strings.switching,
+                      onPressed: () => unawaited(
+                        ref.read(sessionStateProvider.notifier).activate('A'),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    OutlinedButton(
+                      onPressed: () => unawaited(
+                        ref.read(sessionStateProvider.notifier).activate('B'),
+                      ),
+                      child: const Text(Strings.accountB),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),

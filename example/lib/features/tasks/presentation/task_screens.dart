@@ -19,6 +19,8 @@ class AccountActions extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final other = session.key.identity.accountId == 'A' ? 'B' : 'A';
     return Wrap(
+      spacing: 4,
+      runSpacing: 4,
       children: [
         TextButton(
           onPressed: () => unawaited(
@@ -54,16 +56,30 @@ class TaskListScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              AccountActions(session: session),
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: TextButton(
-                  onPressed: () => unawaited(
-                    ref.read(taskRepositoryProvider)?.refreshList(),
-                  ),
-                  child: const Text(Strings.refresh),
+              Text(
+                Strings.workspace,
+                style: Theme.of(context).textTheme.labelLarge
+                    ?.copyWith(color: Theme.of(context).colorScheme.primary),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                Strings.taskHeading,
+                style: Theme.of(context).textTheme.headlineLarge,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                Strings.taskSubtitle,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
+              const SizedBox(height: 24),
+              _TaskToolbar(
+                session: session,
+                refresh: () =>
+                    unawaited(ref.read(taskRepositoryProvider)?.refreshList()),
+              ),
+              const SizedBox(height: 24),
               AsyncContent(
                 loadingLabel: Strings.loading,
                 emptyLabel: Strings.empty,
@@ -78,24 +94,62 @@ class TaskListScreen extends ConsumerWidget {
                         children: [
                           for (final resource in data.tasks)
                             if (resource.task case final task?)
-                              Card(
-                                child: ListTile(
-                                  title: Text(task.title),
-                                  subtitle: Text(
-                                    resource.pending
-                                        ? Strings.pending
-                                        : task.completed
-                                        ? Strings.completed
-                                        : Strings.open,
-                                  ),
-                                  trailing: const Icon(Icons.chevron_right),
-                                  onTap: () => unawaited(
-                                    Navigator.of(context).push<void>(
-                                      MaterialPageRoute(
-                                        builder: (_) => TaskDetailScreen(
-                                          session: session,
-                                          taskId: task.id,
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: Card(
+                                  child: InkWell(
+                                    onTap: () => unawaited(
+                                      Navigator.of(context).push<void>(
+                                        MaterialPageRoute(
+                                          builder: (_) => TaskDetailScreen(
+                                            session: session,
+                                            taskId: task.id,
+                                          ),
                                         ),
+                                      ),
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(20),
+                                      child: Row(
+                                        children: [
+                                          ExcludeSemantics(
+                                            child: Icon(
+                                              task.completed
+                                                  ? Icons.check_circle_rounded
+                                                  : Icons
+                                                        .radio_button_unchecked_rounded,
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .primary,
+                                              size: 24,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 16),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  task.title,
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .titleMedium,
+                                                ),
+                                                const SizedBox(height: 8),
+                                                _TaskStatus(resource: resource),
+                                              ],
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Icon(
+                                            Icons.arrow_forward_rounded,
+                                            size: 20,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurfaceVariant,
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ),
@@ -129,19 +183,19 @@ class TaskDetailScreen extends ConsumerWidget {
     final error =
         data?.failure ?? (async.hasError ? FailureKind.unexpected : null);
     return Scaffold(
-      appBar: AppBar(title: const Text(Strings.tasks)),
+      appBar: AppBar(title: const Text(Strings.taskDetail)),
       body: SingleChildScrollView(
         child: ContentArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              AccountActions(session: session),
-              TextButton(
-                onPressed: () => unawaited(
+              _TaskToolbar(
+                session: session,
+                refresh: () => unawaited(
                   ref.read(taskRepositoryProvider)?.refresh(taskId),
                 ),
-                child: const Text(Strings.refresh),
               ),
+              const SizedBox(height: 24),
               AsyncContent(
                 loadingLabel: Strings.loading,
                 emptyLabel: Strings.empty,
@@ -203,23 +257,28 @@ class _TaskForm extends HookWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        _TaskStatus(resource: resource),
+        const SizedBox(height: 16),
         Text(task.title, style: Theme.of(context).textTheme.headlineSmall),
-        SizedBox(height: UiSpacing.of(context).gap),
-        Text(
-          resource.pending
-              ? Strings.pending
-              : task.completed
-              ? Strings.completed
-              : Strings.open,
-        ),
-        SizedBox(height: UiSpacing.of(context).gap),
+        const SizedBox(height: 24),
         if (task.completed && !resource.pending && !resource.needsRetry)
-          Text(task.note)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                task.note,
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+            ),
+          )
         else ...[
           TextField(
             controller: input,
             readOnly: resource.pending || resource.needsRetry,
-            decoration: const InputDecoration(labelText: Strings.note),
+            decoration: const InputDecoration(
+              labelText: Strings.note,
+              hintText: Strings.noteHint,
+            ),
             minLines: 2,
             maxLines: 5,
           ),
@@ -235,6 +294,15 @@ class _TaskForm extends HookWidget {
                 : () => unawaited(submit(input.text)),
           ),
           const SizedBox(height: 24),
+          const Divider(),
+          const SizedBox(height: 16),
+          Text(
+            Strings.simulations,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 4),
           Wrap(
             spacing: 8,
             children: [
@@ -254,6 +322,64 @@ class _TaskForm extends HookWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _TaskToolbar extends StatelessWidget {
+  const _TaskToolbar({required this.session, required this.refresh});
+  final SessionHandle session;
+  final VoidCallback refresh;
+
+  @override
+  Widget build(BuildContext context) => Wrap(
+    alignment: WrapAlignment.spaceBetween,
+    crossAxisAlignment: WrapCrossAlignment.center,
+    spacing: 12,
+    runSpacing: 8,
+    children: [
+      AccountActions(session: session),
+      TextButton.icon(
+        onPressed: refresh,
+        icon: const Icon(Icons.refresh_rounded, size: 18),
+        label: const Text(Strings.refresh),
+      ),
+    ],
+  );
+}
+
+class _TaskStatus extends StatelessWidget {
+  const _TaskStatus({required this.resource});
+  final TaskResource resource;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final completed = resource.task?.completed ?? false;
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: completed
+              ? colors.secondaryContainer
+              : colors.surfaceContainer,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          resource.pending
+              ? Strings.pending
+              : completed
+              ? Strings.completed
+              : Strings.open,
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: completed
+                ? colors.onSecondaryContainer
+                : colors.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
     );
   }
 }

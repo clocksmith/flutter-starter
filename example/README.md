@@ -29,3 +29,7 @@ This reference uses complete task representations and one unpaginated all-tasks 
 Replace `taskApiFactoryProvider` with an account-bound TaskApi adapter to connect a backend. Map wire DTOs into validated tasks, supply explicit revisions/validators, apply request timeouts, and preserve idempotency on retries. The synthetic server creates fixture validators. A real adapter must preserve server-issued validators in Task.versionToken; the repository forwards that opaque token without interpreting it.
 
 Run `flutter test` for repository, provider, and widget checks. Run `flutter test integration_test/task_journey_test.dart -d <device-id>` for the synthetic journey on a configured device. No live backend or native secure-storage behavior is claimed by these tests.
+
+## Visual theme
+
+The example bundles Manrope under its [SIL Open Font License](assets/fonts/OFL.txt), uses a muted green seed, and follows the system light/dark setting. The shared ui theme supplies 14px control corners, 20px card corners, explicit interaction states, and generous touch targets. Change the app's seed and font family in `app/app.dart`; ui has no font download dependency.

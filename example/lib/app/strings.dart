@@ -5,6 +5,16 @@ import 'package:core/core.dart';
 abstract final class Strings {
   static const title = 'Starter';
   static const tasks = 'Tasks';
+  static const welcome = 'A little focus.\nA lot of progress.';
+  static const welcomeDetail =
+      'A quiet place to keep things moving, one task at a time.';
+  static const chooseAccount = 'Choose your workspace';
+  static const workspace = 'Your workspace';
+  static const taskHeading = 'Make room for progress.';
+  static const taskSubtitle = 'Pick a task, add a note, and move it forward.';
+  static const taskDetail = 'Task details';
+  static const noteHint = 'What did you get done?';
+  static const simulations = 'Try a recovery flow';
   static const loading = 'Loading tasks';
   static const empty = 'No tasks';
   static const retry = 'Retry';

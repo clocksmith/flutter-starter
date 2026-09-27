@@ -20,13 +20,7 @@ class ActionButton extends StatelessWidget {
     liveRegion: pending,
     child: FilledButton(
       onPressed: pending ? null : onPressed,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Text(
-          pending ? pendingLabel : label,
-          textAlign: TextAlign.center,
-        ),
-      ),
+      child: Text(pending ? pendingLabel : label, textAlign: TextAlign.center),
     ),
   );
 }
