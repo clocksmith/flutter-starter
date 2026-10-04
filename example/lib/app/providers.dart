@@ -10,6 +10,8 @@ import '../features/tasks/infrastructure/memory_task_server.dart';
 import '../features/tasks/infrastructure/task_api.dart';
 import '../features/tasks/infrastructure/task_repository.dart';
 
+export '../features/tasks/presentation/task_providers.dart';
+
 final sessionCoordinatorProvider = Provider<SessionCoordinator>(
   (ref) => throw StateError('Bootstrap must supply SessionCoordinator'),
 );
@@ -61,7 +63,8 @@ class SessionController extends Notifier<SessionState> {
   }
 }
 
-final taskRepositoryProvider = Provider<SessionTaskRepository?>((ref) {
+/// Called by the composition override; the implementation remains private to it.
+TaskRepository? createTaskRepository(Ref ref) {
   final session = ref.watch(sessionStateProvider).session;
   if (session == null || !session.isActive) return null;
   final repository = SessionTaskRepository(
@@ -71,14 +74,4 @@ final taskRepositoryProvider = Provider<SessionTaskRepository?>((ref) {
   );
   ref.onDispose(() => unawaited(repository.close()));
   return repository;
-});
-
-final taskListProvider = StreamProvider.autoDispose<TaskListResource>(
-  (ref) =>
-      ref.watch(taskRepositoryProvider)?.watchList() ?? const Stream.empty(),
-);
-
-final taskProvider = StreamProvider.autoDispose.family<TaskResource, String>(
-  (ref, id) =>
-      ref.watch(taskRepositoryProvider)?.watch(id) ?? const Stream.empty(),
-);
+}

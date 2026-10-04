@@ -4,8 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:starter_example/app/app.dart';
 import 'package:starter_example/app/providers.dart';
-import 'package:starter_example/app/strings.dart';
+import 'package:starter_example/l10n/strings.dart';
 import 'package:starter_example/features/tasks/infrastructure/memory_task_server.dart';
+
+Future<void> tapText(WidgetTester tester, String text) async {
+  final target = find.text(text);
+  await tester.ensureVisible(target);
+  await tester.tap(target);
+}
 
 void main() {
   testWidgets('list, detail, failure, retry, Back, and account replacement', (
@@ -23,42 +29,46 @@ void main() {
       ProviderScope(
         overrides: [
           sessionCoordinatorProvider.overrideWithValue(coordinator),
+          taskRepositoryProvider.overrideWith(createTaskRepository),
           memoryServerProvider.overrideWithValue(server),
         ],
         child: const StarterApp(),
       ),
     );
-    await tester.tap(find.text(Strings.accountA));
+    await tapText(tester, Strings.accountA);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('A: Plan the first release'));
+    await tapText(tester, 'A: Plan the first release');
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'Keep this draft');
     await tester.pump();
-    server.nextCompletion = CompletionBehavior.reject;
-    await tester.tap(find.text(Strings.complete));
+    server.simulateNextCompletion(
+      const SessionIdentity('A'),
+      CompletionBehavior.reject,
+    );
+    await tapText(tester, Strings.complete);
     await tester.pumpAndSettle();
     expect(find.text('Keep this draft'), findsOneWidget);
     expect(find.text(Strings.failure(FailureKind.validation)), findsOneWidget);
-    await tester.tap(find.text(Strings.complete));
+    await tapText(tester, Strings.complete);
     await tester.pumpAndSettle();
     expect(find.text(Strings.completed), findsOneWidget);
     await tester.pageBack();
     await tester.pumpAndSettle();
     expect(find.text(Strings.completed), findsOneWidget);
-    await tester.tap(find.text('A: Review the checklist'));
+    await tapText(tester, 'A: Review the checklist');
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'Private A draft');
-    await tester.tap(find.text(Strings.rejectNext));
+    await tapText(tester, Strings.rejectNext);
     await tester.pump();
     expect(find.text(Strings.failureArmed), findsOneWidget);
-    await tester.tap(find.text(Strings.accountB));
+    await tapText(tester, Strings.accountB);
     await tester.pumpAndSettle();
     expect(find.text('Private A draft'), findsNothing);
     expect(find.text(Strings.failureArmed), findsNothing);
     expect(find.text('A: Review the checklist'), findsNothing);
     expect(find.text('B: Plan the first release'), findsOneWidget);
     expect(find.byType(BackButton), findsNothing);
-    await tester.tap(find.text(Strings.signOut));
+    await tapText(tester, Strings.signOut);
     await tester.pumpAndSettle();
     expect(find.text(Strings.demo), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
@@ -79,15 +89,16 @@ void main() {
       ProviderScope(
         overrides: [
           sessionCoordinatorProvider.overrideWithValue(coordinator),
+          taskRepositoryProvider.overrideWith(createTaskRepository),
           memoryServerProvider.overrideWithValue(server),
         ],
         child: const StarterApp(),
       ),
     );
-    await tester.tap(find.text(Strings.accountA));
+    await tapText(tester, Strings.accountA);
     await tester.pump();
     await tester.pump();
-    await tester.tap(find.text(Strings.accountB));
+    await tapText(tester, Strings.accountB);
     for (var frame = 0; frame < 15; frame++) {
       await tester.pump(const Duration(milliseconds: 100));
       expect(find.text('A: Plan the first release'), findsNothing);

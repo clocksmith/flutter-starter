@@ -13,7 +13,15 @@ final class MemoryTaskServer {
   final Map<SessionIdentity, Map<String, Task>> _accounts = {};
   final Map<(SessionIdentity, String), (String, String, String, Task)>
   _results = {};
-  CompletionBehavior nextCompletion = CompletionBehavior.succeed;
+  final Map<SessionIdentity, CompletionBehavior> _nextCompletion = {};
+
+  void simulateNextCompletion(
+    SessionIdentity identity,
+    CompletionBehavior behavior,
+  ) {
+    _nextCompletion[identity] = behavior;
+  }
+
   int completionRequests = 0;
 
   TaskApi forAccount(SessionIdentity identity) => _AccountApi(this, identity);
@@ -65,8 +73,8 @@ final class _AccountApi implements TaskApi {
     required String operationId,
   }) async {
     server.completionRequests++;
-    final behavior = server.nextCompletion;
-    server.nextCompletion = CompletionBehavior.succeed;
+    final behavior =
+        server._nextCompletion.remove(identity) ?? CompletionBehavior.succeed;
     await Future<void>.delayed(server.latency);
     final key = (identity, operationId);
     final previous = server._results[key];

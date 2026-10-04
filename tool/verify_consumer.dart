@@ -60,15 +60,10 @@ void main() {
     await sessions.activate(const SessionIdentity('consumer'));
     await tester.pumpWidget(MaterialApp(
       theme: createUiTheme(seedColor: Colors.purple),
-      home: SessionGate(
-        state: sessions.state,
-        signedOut: (_) => const Text('Out'),
-        transitioning: (_) => const Text('Wait'),
-        failure: (_, _) => const Text('Failed'),
-        ready: (_, _) => const Scaffold(body: ActionButton(
-          label: 'Consumer action', pendingLabel: 'Working', onPressed: null,
-        )),
-      ),
+      home: const Scaffold(body: ContentCard(children: [
+        SectionHeading(title: 'Independent consumer'),
+        ActionButton(label: 'Consumer action', pendingLabel: 'Working', onPressed: null),
+      ])),
     ));
     expect(find.text('Consumer action'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());

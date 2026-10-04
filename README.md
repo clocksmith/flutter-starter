@@ -7,7 +7,7 @@ The project targets Flutter **3.47.5 stable**, Dart **3.13.4**, and Riverpod **3
 | Location | Owns |
 |---|---|
 | `packages/core` | Pure Dart session lifecycle, revocable session handles, typed failures, safe diagnostics |
-| `packages/ui` | Theme and spacing, loading/error surfaces, action buttons, session subtree replacement |
+| `packages/ui` | Theme, layout, accessible controls, loading/error surfaces, and interaction states |
 | `example` | App bootstrap, Riverpod composition, task models, repository reconciliation, synthetic backend, routes, local drafts |
 | `tool` | Formatting, analysis, boundary checks, tests, independent consumer verification |
 
@@ -62,9 +62,9 @@ import 'package:core/core.dart';
 import 'package:ui/ui.dart';
 ```
 
-An app supplies localized labels, theme seeds or its own ThemeData, routes, authentication, and data adapters. It can use core without Flutter or ui with a different state-management choice. Copy the example shell when starting a new app; retain dependencies on the packages so fixes can be adopted together.
+An app supplies localized labels, branding through its design-system boundary, routes, authentication, and data adapters. It can use core without Flutter or ui with a different state-management choice. Copy the example shell when starting a new app; retain dependencies on the packages so fixes can be adopted together.
 
-`tool/verify_consumer.dart` copies only package manifests and public library trees into a temporary directory, removes workspace resolution from those exported copies, and runs a separate app test. It proves the packages do not need the example or the workspace to execute. Local path consumption is the supported distribution in this first version. No packages have been published; generic names may require the permitted `x_core` / `x_ui` namespace before registry publication. Git distribution requires replacing ui's local core dependency with an appropriate version or Git source.
+`tool/verify_consumer.dart` copies only package manifests and public library trees into a temporary directory, removes workspace resolution from those exported copies, and runs a separate app test. It proves the packages do not need the example or the workspace to execute. Local path consumption is the supported distribution in this first version. No packages have been published; generic names may require the permitted `x_core` / `x_ui` namespace before registry publication. The ui package has no core dependency; each package can be consumed independently.
 
 ## Build a new feature in this order
 
@@ -83,7 +83,7 @@ Use cases are optional. Extract shared logic only after a second consumer needs 
 
 Use `SessionHandle.requireActive()` after each asynchronous boundary before publishing or changing local data. Guard credential refresh, storage writes, late 401 handling, navigation, and snackbars too. Register credentials and subscriptions with the appropriate session owner. A session handle is a client lifecycle capability, not proof of server authorization, and revocation does not cancel a command already sent to a server.
 
-`SessionGate` keys the private subtree by the full session key. Put private Navigators and ScaffoldMessengers inside it. Providers must watch the session or its repository and refuse retained values from a different session. App shutdown must await coordinator cleanup when its lifecycle allows it; widget disposal can only initiate asynchronous cleanup.
+The example composition's `SessionGate` keys the private subtree by the full session key. Put private Navigators and ScaffoldMessengers inside it. Providers must watch the session or its repository and refuse retained values from a different session. App shutdown must await coordinator cleanup when its lifecycle allows it; widget disposal can only initiate asynchronous cleanup.
 
 ## Data and diagnostics
 
@@ -95,9 +95,30 @@ The example persists no task data, notes, credentials, or pending writes. Authen
 
 The design follows the [architecture guide](docs/architecture.md). Package public APIs are intentionally small. See the package READMEs and [example README](example/README.md) for customization and the concrete journey.
 
-## Validation record
+## Architecture checks
 
-Verified locally on Flutter 3.47.5 / Dart 3.13.4: formatting, static analysis, dependency boundary checks, seven core tests, three UI tests, eight example tests, one independent consumer test, and a release web build. The final example tests also verify that an opaque server version token is forwarded unchanged. Android/iOS runners and a device integration test are included; native device execution has not been verified. Remote check results are available in [GitHub Actions](https://github.com/clocksmith/flutter-starter/actions).
+`tool/architecture.json` defines allowed layer edges, public package entries,
+framework lifecycle imports, and visual/device ownership. The checker parses
+imports, exports, conditional alternatives, and parts, rejects cycles and unknown
+source locations, and has negative regression fixtures. Keep new business
+operations behind domain contracts and new device plugins in infrastructure.
+See the [enforced ownership contract](docs/architecture.md#enforced-ownership-in-this-repository)
+for exact scope and limitations.
+
+`SessionGate` is app composition, at `example/lib/app/session_gate.dart`; it is no
+longer exported by ui. Task screens bind contract-typed providers to reusable
+components. App composition supplies repository implementations, navigation, and
+optional demo controls.
+
+## Validation
+
+Run `tool/check.sh` and `cd example && flutter build web` on the pinned SDK.
+The checks include architecture violation fixtures, session and account isolation,
+repository races and retries, keyboard/semantic interaction, narrow layouts with
+large text, and independent package consumption. See [GitHub Actions](https://github.com/clocksmith/flutter-starter/actions)
+for revision-specific results. Android/iOS runners and the synthetic device
+journey are included; passing these checks does not qualify native-device or
+production-server behavior.
 
 ## License
 

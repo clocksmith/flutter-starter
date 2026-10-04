@@ -1,46 +1,26 @@
 import 'dart:async';
 
 import 'package:core/core.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart'
+    show BuildContext, Widget, VoidCallback, ValueChanged;
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ui/ui.dart';
 
-import '../../../app/providers.dart';
-import '../../../app/strings.dart';
+import '../../../l10n/strings.dart';
 import '../domain/task.dart';
-import '../infrastructure/memory_task_server.dart';
-
-class AccountActions extends ConsumerWidget {
-  const AccountActions({super.key, required this.session});
-  final SessionHandle session;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final other = session.key.identity.accountId == 'A' ? 'B' : 'A';
-    return Wrap(
-      spacing: 4,
-      runSpacing: 4,
-      children: [
-        TextButton(
-          onPressed: () => unawaited(
-            ref.read(sessionStateProvider.notifier).activate(other),
-          ),
-          child: Text(other == 'A' ? Strings.accountA : Strings.accountB),
-        ),
-        TextButton(
-          onPressed: () =>
-              unawaited(ref.read(sessionStateProvider.notifier).signOut()),
-          child: const Text(Strings.signOut),
-        ),
-      ],
-    );
-  }
-}
+import 'task_providers.dart';
 
 class TaskListScreen extends ConsumerWidget {
-  const TaskListScreen({super.key, required this.session});
+  const TaskListScreen({
+    super.key,
+    required this.session,
+    required this.actions,
+    required this.openTask,
+  });
   final SessionHandle session;
+  final Widget actions;
+  final ValueChanged<String> openTask;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -49,119 +29,44 @@ class TaskListScreen extends ConsumerWidget {
     final data = value?.sessionKey == session.key ? value : null;
     final error =
         data?.failure ?? (async.hasError ? FailureKind.unexpected : null);
-    return Scaffold(
-      appBar: AppBar(title: const Text(Strings.tasks)),
-      body: SingleChildScrollView(
-        child: ContentArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                Strings.workspace,
-                style: Theme.of(context).textTheme.labelLarge
-                    ?.copyWith(color: Theme.of(context).colorScheme.primary),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                Strings.taskHeading,
-                style: Theme.of(context).textTheme.headlineLarge,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                Strings.taskSubtitle,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 24),
-              _TaskToolbar(
-                session: session,
-                refresh: () =>
-                    unawaited(ref.read(taskRepositoryProvider)?.refreshList()),
-              ),
-              const SizedBox(height: 24),
-              AsyncContent(
-                loadingLabel: Strings.loading,
-                emptyLabel: Strings.empty,
-                retryLabel: Strings.retry,
-                loading: data?.loading ?? async.isLoading,
-                errorMessage: error == null ? null : Strings.failure(error),
-                onRetry: () =>
-                    unawaited(ref.read(taskRepositoryProvider)?.refreshList()),
-                content: data == null || data.tasks.isEmpty
-                    ? null
-                    : Column(
-                        children: [
-                          for (final resource in data.tasks)
-                            if (resource.task case final task?)
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: Card(
-                                  child: InkWell(
-                                    onTap: () => unawaited(
-                                      Navigator.of(context).push<void>(
-                                        MaterialPageRoute(
-                                          builder: (_) => TaskDetailScreen(
-                                            session: session,
-                                            taskId: task.id,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(20),
-                                      child: Row(
-                                        children: [
-                                          ExcludeSemantics(
-                                            child: Icon(
-                                              task.completed
-                                                  ? Icons.check_circle_rounded
-                                                  : Icons
-                                                        .radio_button_unchecked_rounded,
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .primary,
-                                              size: 24,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 16),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  task.title,
-                                                  style: Theme.of(context)
-                                                      .textTheme
-                                                      .titleMedium,
-                                                ),
-                                                const SizedBox(height: 8),
-                                                _TaskStatus(resource: resource),
-                                              ],
-                                            ),
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Icon(
-                                            Icons.arrow_forward_rounded,
-                                            size: 20,
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onSurfaceVariant,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                        ],
-                      ),
-              ),
-            ],
-          ),
+    return PageSurface(
+      title: Strings.tasks,
+      children: [
+        const SectionHeading(
+          title: Strings.taskHeading,
+          eyebrow: Strings.workspace,
+          description: Strings.taskSubtitle,
         ),
-      ),
+        actions,
+        SecondaryAction(
+          label: Strings.refresh,
+          onPressed: () =>
+              unawaited(ref.read(taskRepositoryProvider)?.refreshList()),
+        ),
+        AsyncContent(
+          loadingLabel: Strings.loading,
+          emptyLabel: Strings.empty,
+          retryLabel: Strings.retry,
+          loading: data?.loading ?? async.isLoading,
+          errorMessage: error == null ? null : Strings.failure(error),
+          onRetry: () =>
+              unawaited(ref.read(taskRepositoryProvider)?.refreshList()),
+          content: data == null || data.tasks.isEmpty
+              ? null
+              : Section(
+                  children: [
+                    for (final resource in data.tasks)
+                      if (resource.task case final task?)
+                        ActionTile(
+                          title: task.title,
+                          highlighted: task.completed,
+                          status: _status(resource),
+                          onPressed: () => openTask(task.id),
+                        ),
+                  ],
+                ),
+        ),
+      ],
     );
   }
 }
@@ -171,9 +76,15 @@ class TaskDetailScreen extends ConsumerWidget {
     super.key,
     required this.session,
     required this.taskId,
+    required this.actions,
+    this.rejectNext,
+    this.loseNext,
   });
   final SessionHandle session;
   final String taskId;
+  final Widget actions;
+  final VoidCallback? rejectNext;
+  final VoidCallback? loseNext;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -182,59 +93,45 @@ class TaskDetailScreen extends ConsumerWidget {
     final data = value?.sessionKey == session.key ? value : null;
     final error =
         data?.failure ?? (async.hasError ? FailureKind.unexpected : null);
-    return Scaffold(
-      appBar: AppBar(title: const Text(Strings.taskDetail)),
-      body: SingleChildScrollView(
-        child: ContentArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _TaskToolbar(
-                session: session,
-                refresh: () => unawaited(
-                  ref.read(taskRepositoryProvider)?.refresh(taskId),
-                ),
-              ),
-              const SizedBox(height: 24),
-              AsyncContent(
-                loadingLabel: Strings.loading,
-                emptyLabel: Strings.empty,
-                retryLabel: Strings.retry,
-                loading: data?.loading ?? async.isLoading,
-                errorMessage: error == null ? null : Strings.failure(error),
-                onRetry: () => unawaited(
-                  ref.read(taskRepositoryProvider)?.refresh(taskId),
-                ),
-                content: data?.task == null
-                    ? null
-                    : _TaskForm(
-                        resource: data!,
-                        submit: (note) async {
-                          final repository = ref.read(taskRepositoryProvider);
-                          if (repository == null || !session.isActive) return;
-                          try {
-                            if (data.needsRetry) {
-                              await repository.retryCompletion(taskId);
-                            } else {
-                              await repository.complete(taskId, note);
-                            }
-                          } on AppFailure {
-                            // Repository state owns recovery; keep the draft in the form.
-                          }
-                        },
-                        simulate: (behavior) {
-                          ref.read(memoryServerProvider).nextCompletion =
-                              behavior;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text(Strings.failureArmed)),
-                          );
-                        },
-                      ),
-              ),
-            ],
-          ),
+    return PageSurface(
+      title: Strings.taskDetail,
+      children: [
+        actions,
+        SecondaryAction(
+          label: Strings.refresh,
+          onPressed: () =>
+              unawaited(ref.read(taskRepositoryProvider)?.refresh(taskId)),
         ),
-      ),
+        AsyncContent(
+          loadingLabel: Strings.loading,
+          emptyLabel: Strings.empty,
+          retryLabel: Strings.retry,
+          loading: data?.loading ?? async.isLoading,
+          errorMessage: error == null ? null : Strings.failure(error),
+          onRetry: () =>
+              unawaited(ref.read(taskRepositoryProvider)?.refresh(taskId)),
+          content: data?.task == null
+              ? null
+              : _TaskForm(
+                  resource: data!,
+                  rejectNext: rejectNext,
+                  loseNext: loseNext,
+                  submit: (note) async {
+                    final repository = ref.read(taskRepositoryProvider);
+                    if (repository == null || !session.isActive) return;
+                    try {
+                      if (data.needsRetry) {
+                        await repository.retryCompletion(taskId);
+                      } else {
+                        await repository.complete(taskId, note);
+                      }
+                    } on AppFailure {
+                      // Repository state owns recovery; the form retains its draft.
+                    }
+                  },
+                ),
+        ),
+      ],
     );
   }
 }
@@ -243,46 +140,32 @@ class _TaskForm extends HookWidget {
   const _TaskForm({
     required this.resource,
     required this.submit,
-    required this.simulate,
+    this.rejectNext,
+    this.loseNext,
   });
   final TaskResource resource;
-  final Future<void> Function(String note) submit;
-  final void Function(CompletionBehavior) simulate;
+  final Future<void> Function(String) submit;
+  final VoidCallback? rejectNext;
+  final VoidCallback? loseNext;
 
   @override
   Widget build(BuildContext context) {
     final input = useTextEditingController();
     useListenable(input);
     final task = resource.task!;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Section(
       children: [
-        _TaskStatus(resource: resource),
-        const SizedBox(height: 16),
-        Text(task.title, style: Theme.of(context).textTheme.headlineSmall),
-        const SizedBox(height: 24),
+        _status(resource),
+        SectionHeading(title: task.title),
         if (task.completed && !resource.pending && !resource.needsRetry)
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Text(
-                task.note,
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-            ),
-          )
+          ContentCard(children: [BodyCopy(task.note)])
         else ...[
-          TextField(
+          NoteInput(
             controller: input,
+            label: Strings.note,
+            hint: Strings.noteHint,
             readOnly: resource.pending || resource.needsRetry,
-            decoration: const InputDecoration(
-              labelText: Strings.note,
-              hintText: Strings.noteHint,
-            ),
-            minLines: 2,
-            maxLines: 5,
           ),
-          SizedBox(height: UiSpacing.of(context).gap),
           ActionButton(
             label: resource.needsRetry
                 ? Strings.retryCompletion
@@ -293,93 +176,34 @@ class _TaskForm extends HookWidget {
                 ? null
                 : () => unawaited(submit(input.text)),
           ),
-          const SizedBox(height: 24),
-          const Divider(),
-          const SizedBox(height: 16),
-          Text(
-            Strings.simulations,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+          if (rejectNext != null || loseNext != null) ...[
+            const BodyCopy(Strings.simulations),
+            ActionGroup(
+              children: [
+                if (rejectNext != null)
+                  SecondaryAction(
+                    label: Strings.rejectNext,
+                    onPressed: resource.pending ? null : rejectNext,
+                  ),
+                if (loseNext != null)
+                  SecondaryAction(
+                    label: Strings.loseNext,
+                    onPressed: resource.pending ? null : loseNext,
+                  ),
+              ],
             ),
-          ),
-          const SizedBox(height: 4),
-          Wrap(
-            spacing: 8,
-            children: [
-              TextButton(
-                onPressed: resource.pending
-                    ? null
-                    : () => simulate(CompletionBehavior.reject),
-                child: const Text(Strings.rejectNext),
-              ),
-              TextButton(
-                onPressed: resource.pending
-                    ? null
-                    : () => simulate(CompletionBehavior.loseResponse),
-                child: const Text(Strings.loseNext),
-              ),
-            ],
-          ),
+          ],
         ],
       ],
     );
   }
 }
 
-class _TaskToolbar extends StatelessWidget {
-  const _TaskToolbar({required this.session, required this.refresh});
-  final SessionHandle session;
-  final VoidCallback refresh;
-
-  @override
-  Widget build(BuildContext context) => Wrap(
-    alignment: WrapAlignment.spaceBetween,
-    crossAxisAlignment: WrapCrossAlignment.center,
-    spacing: 12,
-    runSpacing: 8,
-    children: [
-      AccountActions(session: session),
-      TextButton.icon(
-        onPressed: refresh,
-        icon: const Icon(Icons.refresh_rounded, size: 18),
-        label: const Text(Strings.refresh),
-      ),
-    ],
-  );
-}
-
-class _TaskStatus extends StatelessWidget {
-  const _TaskStatus({required this.resource});
-  final TaskResource resource;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final completed = resource.task?.completed ?? false;
-    return Align(
-      alignment: AlignmentDirectional.centerStart,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: completed
-              ? colors.secondaryContainer
-              : colors.surfaceContainer,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          resource.pending
-              ? Strings.pending
-              : completed
-              ? Strings.completed
-              : Strings.open,
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            color: completed
-                ? colors.onSecondaryContainer
-                : colors.onSurfaceVariant,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-    );
-  }
-}
+Widget _status(TaskResource resource) => StatusBadge(
+  label: resource.pending
+      ? Strings.pending
+      : resource.task?.completed == true
+      ? Strings.completed
+      : Strings.open,
+  highlighted: resource.task?.completed ?? false,
+);

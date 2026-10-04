@@ -1,5 +1,13 @@
 import 'package:core/core.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/widgets.dart'
+    show
+        BuildContext,
+        Widget,
+        StatelessWidget,
+        WidgetBuilder,
+        KeyedSubtree,
+        ValueKey,
+        Builder;
 
 /// Replaces the entire private subtree (including its Navigator) on a switch.
 /// Pass the coordinator's current state, not a retained async snapshot.

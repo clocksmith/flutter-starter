@@ -1,5 +1,5 @@
-import 'package:core/core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ui/ui.dart';
 
@@ -59,35 +59,107 @@ void main() {
     expect(taps, 0);
     expect(tester.takeException(), isNull);
   });
+  testWidgets('resource tile exposes an accessible keyboard action', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
 
-  testWidgets('account replacement destroys widget drafts', (tester) async {
-    final coordinator = SessionCoordinator();
-    addTearDown(() async {
-      await tester.pumpWidget(const SizedBox.shrink());
-      final closing = coordinator.dispose();
+    try {
+      var opened = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: createUiTheme(seedColor: Colors.green),
+          home: PageSurface(
+            title: 'Resources',
+            children: [
+              ActionTile(
+                title: 'An independent resource',
+                status: const StatusBadge(label: 'Available'),
+                onPressed: () => opened++,
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.pump();
-      await closing;
-    });
-    await coordinator.activate(const SessionIdentity('A'));
-    Widget app() => MaterialApp(
-      home: SessionGate(
-        state: coordinator.state,
-        signedOut: (_) => const Text('Signed out'),
-        transitioning: (_) => const Text('Switching'),
-        failure: (_, _) => const Text('Failure'),
-        ready: (_, _) => const Scaffold(body: TextField()),
-      ),
-    );
-    await tester.pumpWidget(app());
-    await tester.enterText(find.byType(TextField), 'A private draft');
-    await coordinator.activate(const SessionIdentity('B'));
-    await tester.pumpWidget(app());
-    expect(find.text('A private draft'), findsNothing);
-    final switching = coordinator.signOut();
-    await tester.pumpWidget(app());
-    expect(find.byType(TextField), findsNothing);
-    await switching;
-    await tester.pumpWidget(app());
-    expect(find.text('Signed out'), findsOneWidget);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(opened, 1);
+      expect(
+        tester.getSemantics(find.byType(InkWell)),
+        matchesSemantics(
+          label: 'An independent resource\nAvailable',
+          isButton: true,
+          hasTapAction: true,
+          hasFocusAction: true,
+          isFocusable: true,
+          isFocused: true,
+        ),
+      );
+      await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+      await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+    } finally {
+      semantics.dispose();
+    }
   });
+
+  for (final brightness in Brightness.values) {
+    testWidgets(
+      'surfaces accommodate narrow layouts and large text in $brightness',
+      (tester) async {
+        tester.view.physicalSize = const Size(360, 800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final controller = TextEditingController(text: 'Retained draft');
+        addTearDown(controller.dispose);
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: createUiTheme(
+              seedColor: Colors.green,
+              brightness: brightness,
+            ),
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context)
+                  .copyWith(textScaler: const TextScaler.linear(2)),
+              child: child!,
+            ),
+            home: PageSurface(
+              title: 'Example',
+              children: [
+                const SectionHeading(
+                  title: 'A longer localized heading',
+                  description: 'Readable supporting text',
+                ),
+                ActionTile(
+                  title: 'A resource with a longer title',
+                  status: const StatusBadge(label: 'Waiting for confirmation'),
+                  onPressed: () {},
+                ),
+                NoteInput(
+                  controller: controller,
+                  label: 'Note',
+                  hint: 'Add a note',
+                  readOnly: true,
+                ),
+                ActionGroup(
+                  children: [
+                    SecondaryAction(
+                      label: 'Another longer action',
+                      onPressed: () {},
+                    ),
+                    const SecondaryAction(label: 'Disabled action'),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+        expect(controller.text, 'Retained draft');
+      },
+    );
+  }
 }

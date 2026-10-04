@@ -1,7 +1,8 @@
 import 'dart:async';
 
 import 'package:core/core.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart'
+    show BuildContext, Widget, StatefulWidget, State, runApp;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app/app.dart';
@@ -28,7 +29,10 @@ class _StarterRootState extends State<StarterRoot> {
 
   @override
   Widget build(BuildContext context) => ProviderScope(
-    overrides: [sessionCoordinatorProvider.overrideWithValue(coordinator)],
+    overrides: [
+      sessionCoordinatorProvider.overrideWithValue(coordinator),
+      taskRepositoryProvider.overrideWith(createTaskRepository),
+    ],
     child: const StarterApp(),
   );
 }

@@ -11,14 +11,15 @@ Run `flutter run` here after resolving the workspace dependencies. This app uses
 5. For another task, select **Lose next response** before submitting. The synthetic server commits but throws a transport failure. **Retry completion** reuses the original operation ID, ETag, and note; the server replays the recorded result.
 6. Switch to B while on detail or while a read/write is pending. Old drafts, navigation, and snackbars disappear. Server work may finish for A, but cannot update B's repository.
 
-The failure controls are example-only scaffolding; remove them from a copied product shell. The in-memory server keeps records across account switches but resets on process restart. UI strings are centralized in `app/strings.dart` and currently English only; ui itself accepts arbitrary localized labels.
+Failure controls are bound to the selected account and injected into screens as callbacks. They are example-only scaffolding; remove them from a copied product shell. The in-memory server keeps records across account switches but resets on process restart. UI strings are centralized in `l10n/strings.dart` and currently English only; ui itself accepts arbitrary localized labels.
 
 ## Ownership
 
 | State | Owner |
 |---|---|
 | Active account generation and cleanup | core SessionCoordinator |
-| Provider dependencies | app/providers.dart |
+| Concrete dependency assembly and cleanup | app/providers.dart |
+| Contract-typed resource projections | features/tasks/presentation/task_providers.dart |
 | Confirmed task, optimistic overlay, original retry operation | SessionTaskRepository |
 | Synthetic authority and replay records | MemoryTaskServer |
 | Completion note and text controller | HookWidget form |
@@ -32,4 +33,4 @@ Run `flutter test` for repository, provider, and widget checks. Run `flutter tes
 
 ## Visual theme
 
-The example bundles Manrope under its [SIL Open Font License](assets/fonts/OFL.txt), uses a muted green seed, and follows the system light/dark setting. The shared ui theme supplies 14px control corners, 20px card corners, explicit interaction states, and generous touch targets. Change the app's seed and font family in `app/app.dart`; ui has no font download dependency.
+The example bundles Manrope under its [SIL Open Font License](assets/fonts/OFL.txt), uses a muted green seed, and follows the system light/dark setting. The shared ui theme supplies 14px control corners, 20px card corners, explicit interaction states, and generous touch targets. Change the app's seed and font family in `design_system/branding.dart`; ui has no font download dependency.

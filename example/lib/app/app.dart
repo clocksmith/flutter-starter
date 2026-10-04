@@ -1,13 +1,25 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:core/core.dart';
+import 'package:flutter/material.dart'
+    show
+        BuildContext,
+        Widget,
+        MaterialApp,
+        Locale,
+        Navigator,
+        MaterialPageRoute,
+        ScaffoldMessenger;
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ui/ui.dart';
 
+import '../design_system/branding.dart';
+import '../features/tasks/infrastructure/memory_task_server.dart';
 import '../features/tasks/presentation/task_screens.dart';
+import '../l10n/strings.dart';
 import 'providers.dart';
-import 'strings.dart';
+import 'session_gate.dart';
 
 class StarterApp extends ConsumerWidget {
   const StarterApp({super.key});
@@ -15,33 +27,92 @@ class StarterApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) => MaterialApp(
     title: Strings.title,
-    theme: createUiTheme(
-      seedColor: const Color(0xff315b54),
-      fontFamily: 'Manrope',
-    ),
-    darkTheme: createUiTheme(
-      seedColor: const Color(0xff315b54),
-      brightness: Brightness.dark,
-      fontFamily: 'Manrope',
-    ),
+    theme: appTheme(),
+    darkTheme: appTheme(dark: true),
     localizationsDelegates: GlobalMaterialLocalizations.delegates,
     supportedLocales: const [Locale('en')],
     home: SessionGate(
       state: ref.watch(sessionStateProvider),
       signedOut: (_) => const _SignIn(),
-      transitioning: (_) =>
-          const Scaffold(body: Center(child: Text(Strings.switching))),
+      transitioning: (_) => const PageSurface(
+        title: Strings.title,
+        children: [BodyCopy(Strings.switching)],
+      ),
       failure: (_, _) => const _SignIn(failed: true),
       ready: (_, session) => ScaffoldMessenger(
         child: Navigator(
           onGenerateRoute: (settings) => MaterialPageRoute<void>(
             settings: settings,
-            builder: (_) => TaskListScreen(session: session),
+            builder: (context) => TaskListScreen(
+              session: session,
+              actions: _AccountActions(session: session),
+              openTask: (id) => unawaited(
+                Navigator.of(context).push<void>(
+                  MaterialPageRoute(
+                    builder: (context) => TaskDetailScreen(
+                      session: session,
+                      taskId: id,
+                      actions: _AccountActions(session: session),
+                      rejectNext: () => _simulate(
+                        context,
+                        ref,
+                        session,
+                        CompletionBehavior.reject,
+                      ),
+                      loseNext: () => _simulate(
+                        context,
+                        ref,
+                        session,
+                        CompletionBehavior.loseResponse,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
       ),
     ),
   );
+
+  void _simulate(
+    BuildContext context,
+    WidgetRef ref,
+    SessionHandle session,
+    CompletionBehavior behavior,
+  ) {
+    if (!session.isActive) return;
+    ref
+        .read(memoryServerProvider)
+        .simulateNextCompletion(session.key.identity, behavior);
+    showNotice(context, Strings.failureArmed);
+  }
+}
+
+class _AccountActions extends ConsumerWidget {
+  const _AccountActions({required this.session});
+  final SessionHandle session;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final other = session.key.identity.accountId == 'A' ? 'B' : 'A';
+    return ActionGroup(
+      children: [
+        SecondaryAction(
+          label: other == 'A' ? Strings.accountA : Strings.accountB,
+          onPressed: () => unawaited(
+            ref.read(sessionStateProvider.notifier).activate(other),
+          ),
+        ),
+        SecondaryAction(
+          label: Strings.signOut,
+          onPressed: () =>
+              unawaited(ref.read(sessionStateProvider.notifier).signOut()),
+        ),
+      ],
+    );
+  }
 }
 
 class _SignIn extends ConsumerWidget {
@@ -49,81 +120,32 @@ class _SignIn extends ConsumerWidget {
   final bool failed;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => Scaffold(
-    appBar: AppBar(title: const Text(Strings.title)),
-    body: SingleChildScrollView(
-      child: ContentArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SizedBox(height: 24),
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Icon(
-                  Icons.checklist_rounded,
-                  size: 32,
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                ),
-              ),
-            ),
-            const SizedBox(height: 32),
-            Text(
-              Strings.welcome,
-              style: Theme.of(context).textTheme.headlineLarge,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              Strings.welcomeDetail,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 32),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      Strings.chooseAccount,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      failed ? Strings.sessionFailure : Strings.demo,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    ActionButton(
-                      label: Strings.accountA,
-                      pendingLabel: Strings.switching,
-                      onPressed: () => unawaited(
-                        ref.read(sessionStateProvider.notifier).activate('A'),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    OutlinedButton(
-                      onPressed: () => unawaited(
-                        ref.read(sessionStateProvider.notifier).activate('B'),
-                      ),
-                      child: const Text(Strings.accountB),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+  Widget build(BuildContext context, WidgetRef ref) => PageSurface(
+    title: Strings.title,
+    children: [
+      const SectionHeading(
+        title: Strings.welcome,
+        description: Strings.welcomeDetail,
       ),
-    ),
+      ContentCard(
+        children: [
+          const SectionHeading(title: Strings.chooseAccount),
+          BodyCopy(failed ? Strings.sessionFailure : Strings.demo),
+          ActionButton(
+            label: Strings.accountA,
+            pendingLabel: Strings.switching,
+            onPressed: () => unawaited(
+              ref.read(sessionStateProvider.notifier).activate('A'),
+            ),
+          ),
+          SecondaryAction(
+            label: Strings.accountB,
+            onPressed: () => unawaited(
+              ref.read(sessionStateProvider.notifier).activate('B'),
+            ),
+          ),
+        ],
+      ),
+    ],
   );
 }

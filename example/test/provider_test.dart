@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:starter_example/app/providers.dart';
 import 'package:starter_example/features/tasks/infrastructure/memory_task_server.dart';
+import 'package:starter_example/features/tasks/infrastructure/task_repository.dart';
 
 void main() {
   test(
@@ -12,6 +13,7 @@ void main() {
       final container = ProviderContainer.test(
         overrides: [
           sessionCoordinatorProvider.overrideWithValue(coordinator),
+          taskRepositoryProvider.overrideWith(createTaskRepository),
           memoryServerProvider.overrideWithValue(
             MemoryTaskServer(latency: Duration.zero),
           ),
@@ -21,7 +23,8 @@ void main() {
       container.listen(taskRepositoryProvider, (_, _) {});
       await coordinator.activate(const SessionIdentity('A'));
       await container.pump();
-      final first = container.read(taskRepositoryProvider)!;
+      final first =
+          container.read(taskRepositoryProvider)! as SessionTaskRepository;
       final reader = container.listen(taskProvider('1'), (_, _) {});
       await container.read(taskProvider('1').future);
       expect(first.subscriberCount, 1);
@@ -32,7 +35,8 @@ void main() {
       await coordinator.signOut();
       await coordinator.activate(const SessionIdentity('A'));
       await container.pump();
-      final second = container.read(taskRepositoryProvider)!;
+      final second =
+          container.read(taskRepositoryProvider)! as SessionTaskRepository;
       expect(identical(first, second), isFalse);
       expect(first.isClosed, isTrue);
       expect(first.session.key, isNot(second.session.key));

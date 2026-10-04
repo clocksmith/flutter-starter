@@ -98,7 +98,10 @@ void main() {
       final detailSub = repo.watch('1').listen(details.add);
       addTearDown(listSub.cancel);
       addTearDown(detailSub.cancel);
-      server.nextCompletion = CompletionBehavior.reject;
+      server.simulateNextCompletion(
+        const SessionIdentity('A'),
+        CompletionBehavior.reject,
+      );
       await expectLater(
         repo.complete('1', 'Draft'),
         throwsA(isA<AppFailure>()),
@@ -127,7 +130,10 @@ void main() {
       final server = MemoryTaskServer(latency: Duration.zero);
       final repo = repository(server.forAccount(const SessionIdentity('A')));
       await repo.refresh('1');
-      server.nextCompletion = CompletionBehavior.loseResponse;
+      server.simulateNextCompletion(
+        const SessionIdentity('A'),
+        CompletionBehavior.loseResponse,
+      );
       await expectLater(
         repo.complete('1', 'Original'),
         throwsA(isA<AppFailure>()),
@@ -197,4 +203,45 @@ void main() {
       expect((await repo.watch('1').first).task!.revision, 8);
     },
   );
+  test('failure injection and idempotency are isolated by account', () async {
+    final server = MemoryTaskServer(latency: Duration.zero);
+    const a = SessionIdentity('A');
+    const b = SessionIdentity('B');
+    server.simulateNextCompletion(a, CompletionBehavior.reject);
+    final apiB = server.forAccount(b);
+    final beforeB = await apiB.read('1');
+    final completedB = await apiB.complete(
+      '1',
+      note: 'B only',
+      etag: beforeB.versionToken,
+      operationId: 'same-operation',
+    );
+    expect(completedB.note, 'B only');
+    final apiA = server.forAccount(a);
+    final beforeA = await apiA.read('1');
+    await expectLater(
+      apiA.complete(
+        '1',
+        note: 'A only',
+        etag: beforeA.versionToken,
+        operationId: 'same-operation',
+      ),
+      throwsA(
+        isA<AppFailure>().having(
+          (error) => error.kind,
+          'kind',
+          FailureKind.validation,
+        ),
+      ),
+    );
+    expect((await apiA.read('1')).completed, isFalse);
+    final completedA = await apiA.complete(
+      '1',
+      note: 'A only',
+      etag: beforeA.versionToken,
+      operationId: 'same-operation',
+    );
+    expect(completedA.note, 'A only');
+    expect((await apiB.read('1')).note, 'B only');
+  });
 }
