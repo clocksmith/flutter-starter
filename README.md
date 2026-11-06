@@ -93,7 +93,7 @@ The example persists no task data, notes, credentials, or pending writes. Authen
 
 ## Reference
 
-The design follows the [architecture guide](docs/architecture.md). Package public APIs are intentionally small. See the package READMEs and [example README](example/README.md) for customization and the concrete journey.
+The design follows the [architecture guide](docs/guide.md); the enforced rules are the [architecture contract](docs/architecture.md). Package public APIs are intentionally small. See the package READMEs and [example README](example/README.md) for customization and the concrete journey.
 
 ## Architecture checks
 
