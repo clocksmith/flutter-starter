@@ -2,6 +2,24 @@
 
 Build reusable packages named `core` and `ui`, plus a runnable example that consumes only their public APIs. Use `x_core` and `x_ui` only if a namespace becomes necessary.
 
+## Build boldly
+
+- Build the ambitious version. Implement the bold idea end to end, run it, then
+  fix what breaks. A working rough cut beats a careful plan.
+- Act without asking on reversible work in your lane: new features, rewrites,
+  large refactors, deleting dead code, wild experiments. Ask only before
+  irreversible or outward-facing steps: force-push, deleting data, spending
+  money, publishing, or touching another session's uncommitted work.
+- Reading is lookup, not a gate. Read the code you change; consult GOALS,
+  CATSCAN, charters and contracts when a question needs them, never as a
+  checklist before editing.
+- Qualification, receipts and frozen comparisons govern what we claim, not
+  whether code may be written, merged or tried. Measure once something is in use.
+- Breaking an experiment is fine. Fix breakage you cause before you stop, and
+  leave `main` runnable.
+- Report what you built and what it did. Never claim faster, better or qualified
+  without a measurement.
+
 ## Development verification
 
 - During development, choose checks for the changed behavior: syntax/type checks,
