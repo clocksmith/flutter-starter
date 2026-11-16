@@ -19,8 +19,8 @@ starter's tests.
 | Shared domain utilities | `packages/core/` | Pure Dart sessions, failures, diagnostics |
 | Localization | `example/lib/l10n/` | Labels and safe failure-to-text mapping |
 
-Short `AGENTS.md` files identify the owner at each boundary and refer back here.
-They do not maintain separate architecture rules. The current task flow needs no
+The root `AGENTS.md` links this component map; leaf directories do not repeat
+the same architecture and verification instructions. The current task flow needs no
 application use-case class: presentation invokes the repository contract and
 infrastructure owns reconciliation. Add orchestration only when a business rule
 requires it.
@@ -53,6 +53,10 @@ receive navigation and optional demo controls as callbacks. Their
 registers, and closes the concrete implementation. Fake failure controls are
 account-bound so an action for one account cannot affect another account's next
 request.
+
+`tool/` owns deterministic architecture enforcement, its negative fixtures and
+the validation command. Change `tool/architecture.json` and this guide together
+when deliberately moving a boundary; do not exempt violations to make CI green.
 
 Run `bash tool/check.sh` for formatting, analysis, architecture checks and their
 negative fixtures, core/UI/example behavior tests, and an independent consumer.

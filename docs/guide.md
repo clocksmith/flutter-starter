@@ -43,7 +43,7 @@ Do not create a class for every box in a diagram. A simple read-only screen may 
 ### Suggested project tree
 
 ```text
-AGENTS.md                        # root contract; leaf instructions link to this guide
+AGENTS.md                        # root contract; links the canonical architecture map
 CLAUDE.md                        # optional link to AGENTS.md, never a second rule set
 analysis_options.yaml            # analyzer and lint policy
 docs/
